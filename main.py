@@ -1,21 +1,30 @@
-function checkTarget(target) {
-    let host = target;
-    let port = 80;
+from flask import Flask, request, jsonify
+import socket
+import os
 
-    if (target.includes(':')) {
-        const parts = target.split(':');
-        if (parts.length === 2 && !isNaN(parts[1]) && parts[1] !== '') {
-            host = parts[0];
-            port = parseInt(parts[1], 10);
-        } else {
-            return Promise.resolve(false);
-        }
-    }
+app = Flask(__name__)
 
-    const url = `https://ping-server-tuhv.onrender.com/check?host=${encodeURIComponent(host)}&port=${port}`;
+@app.route('/check')
+def check():
+    host = request.args.get('host')
+    port = request.args.get('port', '80')
 
-    return fetch(url)
-        .then(res => res.json())
-        .then(data => !!data.alive)
-        .catch(() => false);
-}
+    if not host:
+        return jsonify({"error": "Missing 'host' parameter"}), 400
+
+    try:
+        port = int(port)
+        if not (1 <= port <= 65535):
+            raise ValueError("Invalid port")
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid 'port' parameter"}), 400
+
+    try:
+        sock = socket.create_connection((host, port), timeout=5)
+        sock.close()
+        alive = True
+    except:
+        alive = False
+
+    return jsonify({
+        "host": host,
