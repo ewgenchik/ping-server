@@ -12,7 +12,6 @@ function checkTarget(target) {
         }
     }
 
-    // ⬇️ Замените URL на ваш Render-адрес!
     const url = `https://ping-server-tuhv.onrender.com/check?host=${encodeURIComponent(host)}&port=${port}`;
 
     return fetch(url)
