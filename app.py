@@ -7,34 +7,31 @@ import socket
 
 app = Flask(__name__)
 
-# --- Функция для ICMP-пинга ---
+
 def icmp_ping(host):
     try:
-        # Метод 1: Используя библиотеку ping3
-        # Возвращает время в секундах или None/False при ошибке
+        
         result = ping(host, timeout=3)
         if result is not None and result is not False:
-            return True, round(result * 1000, 2) # возвращаем время в мс
+            return True, round(result * 1000, 2) 
         else:
             return False, None
     except Exception as e:
         print(f"Error using ping3: {e}")
-        # Если ping3 не работает (например, из-за отсутствия привилегий или ограничений), можно попробовать subprocess
+        
         try:
-            # Метод 2: Используя системную команду ping через subprocess
-            # Убедимся, что host - это IP или домен, а не что-то вредоносное
-            # Базовая проверка: разрешены только буквы, цифры, точки, тире, двоеточия (IPv6), скобки (для IPv6)
+            
             if not socket.inet_aton(host) and not all(c.isalnum() or c in '.-:[]' for c in host):
                 return False, None
             result = subprocess.run(
-                ["ping", "-c", "1", "-W", "3", str(host)], # для Linux/Mac. На Windows: ["ping", "-n", "1", "-w", "3000", str(host)]
+                ["ping", "-c", "1", "-W", "3", str(host)], 
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 timeout=5
             )
             if result.returncode == 0:
-                # subprocess не возвращает время напрямую, но мы знаем, что пинг успешен
-                return True, "N/A (subprocess)" # или можно попытаться парсить вывод, но это сложнее
+               
+                return True, "N/A (subprocess)"
             else:
                 return False, None
         except subprocess.TimeoutExpired:
@@ -47,7 +44,7 @@ def icmp_ping(host):
 
 @app.route('/ping')
 def check():
-    # Изменили маршрут с '/check' на '/ping' для ясности
+   
     target = request.args.get('target') or request.args.get('host')
 
     if not target:
@@ -55,10 +52,7 @@ def check():
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
 
-    # Проверка на корректность IP/домена (базовая)
-    # Позволяет IPv4, IPv6, доменные имена
-    # Простая проверка: содержит только разрешённые символы
-    # Более строгая проверка возможна через регулярные выражения, но усложняет код
+    
     if not all(c.isalnum() or c in '.-:[]_' for c in target):
         response = make_response(jsonify({"error": "Invalid 'target' format"}), 400)
         response.headers['Access-Control-Allow-Origin'] = '*'
@@ -77,7 +71,7 @@ def check():
     response.headers['Access-Control-Allow-Origin'] = '*'
     return response
 
-# Для отладки: маршрут, который всегда отвечает
+
 @app.route('/')
 def index():
     response = make_response(jsonify({"message": "ICMP Ping Server is running"}), 200)
